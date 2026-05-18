@@ -1,0 +1,29 @@
+TranslateX - Telegram Bot
+Version: 1.0.0
+Release Date: 18.05.2026
+Status: Production Ready
+
+Features:
+✅ Translation to 9 languages
+✅ Admin panel with statistics
+✅ Ban/Unban system
+✅ Broadcast messages
+✅ Anti-spam protection
+✅ SQLite database
+✅ Async/Await support
+✅ FSM state management
+✅ Premium emoji interface
+✅ Full Uzbek language support
+
+Technology Stack:
+- Python 3.8+
+- aiogram 3.3.0
+- SQLite
+- deep-translator
+- aiosqlite
+- python-dotenv
+
+Author: TranslateX Team
+License: MIT
+
+For more information, see README.md
