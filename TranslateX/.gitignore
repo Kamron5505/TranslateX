@@ -1,0 +1,79 @@
+# Виртуальное окружение
+venv/
+env/
+ENV/
+.venv
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Переменные окружения
+.env
+.env.local
+.env.*.local
+
+# База данных
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Логи
+logs/
+*.log
+
+# Резервные копии
+backups/
+*.bak
+*.backup
+
+# Временные файлы
+tmp/
+temp/
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+.directory
+
+# Проект
+.project
+.pydevproject
+.settings/
+
+# Тестирование
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Другое
+*.pid
+*.sock
