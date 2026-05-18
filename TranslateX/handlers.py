@@ -15,7 +15,14 @@ from states import TranslateStates, AdminStates
 
 logger = logging.getLogger(__name__)
 router = Router()
-db = Database()
+
+# Инициализируем db как None, будет установлена в main.py
+db = None
+
+def set_db(database):
+    """Установить экземпляр БД"""
+    global db
+    db = database
 
 
 # ==================== КОМАНДЫ ====================

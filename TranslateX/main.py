@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from config import BOT_TOKEN, LOG_LEVEL, DATABASE_PATH, EMOJI_PREMIUM
 from database import Database
-from handlers import router
+from handlers import router, set_db
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -36,6 +36,9 @@ async def main():
     
     # Инициализация БД
     await db.init()
+    
+    # Передаем БД в handlers
+    set_db(db)
     
     # Инициализация бота
     bot = Bot(token=BOT_TOKEN)
