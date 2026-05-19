@@ -3,31 +3,31 @@ from config import LANGUAGES, EMOJI_PREMIUM
 
 
 def get_language_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура выбора языка с флагами"""
+    """Клавиатура выбора языка с названиями"""
     buttons = []
     
-    # Порядок языков
+    # Порядок языков с названиями
     lang_order = [
-        ("ru", "🇷🇺"),
-        ("en", "🇺🇸"),
-        ("pt", "🇵🇹"),
-        ("de", "🇩🇪"),
-        ("fr", "🇫🇷"),
-        ("es", "🇪🇸"),
-        ("it", "🇮🇹"),
-        ("tr", "🇹🇷"),
-        ("uz", "🇺🇿"),
+        ("ru", "🇷🇺 Tilni tanlang (ru)"),
+        ("en", "🇺🇸 Tilni tanlang (en)"),
+        ("pt", "🇵🇹 Tilni tanlang (pt)"),
+        ("de", "🇩🇪 Tilni tanlang (de)"),
+        ("fr", "🇫🇷 Tilni tanlang (fr)"),
+        ("es", "🇪🇸 Tilni tanlang (es)"),
+        ("it", "🇮🇹 Tilni tanlang (it)"),
+        ("tr", "🇹🇷 Tilni tanlang (tr)"),
+        ("uz", "🇺🇿 Tilni tanlang (uz)"),
     ]
     
-    # Создаем кнопки по 3 в ряду
-    for i in range(0, len(lang_order), 3):
+    # Создаем кнопки по 2 в ряду
+    for i in range(0, len(lang_order), 2):
         row = []
-        for j in range(3):
+        for j in range(2):
             if i + j < len(lang_order):
-                code, emoji = lang_order[i + j]
+                code, label = lang_order[i + j]
                 row.append(
                     InlineKeyboardButton(
-                        text=emoji,
+                        text=label,
                         callback_data=f"lang_{code}"
                     )
                 )
