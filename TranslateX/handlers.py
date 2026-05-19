@@ -66,8 +66,10 @@ async def handle_source_language(message: Message, state: FSMContext):
         await message.answer(f"{EMOJI_PREMIUM['error']} Siz bloklangan!")
         return
     
+    # Проверяем если это выбор языка (содержит флаг)
     if any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿"]):
         source_lang = lang_name_to_code(text)
+        logger.info(f"Manba tili tanlandi: {text} -> {source_lang}")
         await state.update_data(source_lang=source_lang)
         await state.set_state(TranslateStates.waiting_for_text)
         
@@ -87,11 +89,11 @@ async def handle_source_language(message: Message, state: FSMContext):
         return
     
     await state.update_data(source_text=text)
-    await state.set_state(TranslateStates.waiting_for_source_lang)
+    await state.set_state(TranslateStates.waiting_for_target_lang)
     
     await message.answer(
-        f"{EMOJI_PREMIUM['world']} Matn qaysi tildan tarjima qilinsin?",
-        reply_markup=get_source_language_keyboard()
+        f"{EMOJI_PREMIUM['world']} Matn qaysi tilga tarjima qilinsin?",
+        reply_markup=get_target_language_keyboard()
     )
 
 
@@ -118,24 +120,6 @@ async def handle_text_input(message: Message, state: FSMContext):
     )
 
 
-@router.message(TranslateStates.waiting_for_source_lang, F.text)
-async def handle_source_lang_selection(message: Message, state: FSMContext):
-    text = message.text.strip()
-    
-    if not any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿"]):
-        await message.answer(f"{EMOJI_PREMIUM['error']} Iltimos, tilni tanlang!")
-        return
-    
-    source_lang = lang_name_to_code(text)
-    await state.update_data(source_lang=source_lang)
-    await state.set_state(TranslateStates.waiting_for_target_lang)
-    
-    await message.answer(
-        f"{EMOJI_PREMIUM['world']} Matn qaysi tilga tarjima qilinsin?",
-        reply_markup=get_target_language_keyboard()
-    )
-
-
 @router.message(TranslateStates.waiting_for_target_lang, F.text)
 async def handle_target_lang_selection(message: Message, state: FSMContext):
     user_id = message.from_user.id
@@ -151,9 +135,13 @@ async def handle_target_lang_selection(message: Message, state: FSMContext):
         return
     
     target_lang = lang_name_to_code(text)
+    logger.info(f"Maqsadli tili tanlandi: {text} -> {target_lang}")
+    
     data = await state.get_data()
     source_text = data.get("source_text", "")
     source_lang = data.get("source_lang", "auto")
+    
+    logger.info(f"Tarjima: {source_lang} -> {target_lang}")
     
     await message.answer(f"{EMOJI_PREMIUM['lightning']} Tarjima qilinmoqda...")
     

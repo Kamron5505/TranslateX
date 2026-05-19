@@ -65,6 +65,14 @@ def get_confirm_keyboard() -> InlineKeyboardMarkup:
 
 
 def lang_name_to_code(lang_name: str) -> str:
+    """Преобразовать название языка в код"""
+    # Извлекаем название из текста (например "🇫🇷 French" -> "French")
+    parts = lang_name.split()
+    if len(parts) > 1:
+        lang_text = " ".join(parts[1:])  # Берем все после флага
+    else:
+        lang_text = lang_name
+    
     lang_map = {
         "Uzbek": "uz",
         "Russian": "ru",
@@ -76,8 +84,10 @@ def lang_name_to_code(lang_name: str) -> str:
         "Italian": "it",
     }
     
+    # Ищем точное совпадение
     for key, code in lang_map.items():
-        if key in lang_name:
+        if key.lower() in lang_text.lower():
             return code
     
+    # Если не нашли, возвращаем узбекский по умолчанию
     return "uz"
