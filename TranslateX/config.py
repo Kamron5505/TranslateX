@@ -10,6 +10,7 @@ DATABASE_PATH = os.getenv("DATABASE_PATH", "data/bot.db")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 LANGUAGES = {
+    "🇺🇿": "uz",
     "🇷🇺": "ru",
     "🇺🇸": "en",
     "🇵🇹": "pt",
@@ -18,19 +19,18 @@ LANGUAGES = {
     "🇪🇸": "es",
     "🇮🇹": "it",
     "🇹🇷": "tr",
-    "🇺🇿": "uz",
 }
 
 LANGUAGE_NAMES = {
-    "ru": "Русский",
+    "uz": "Uzbek",
+    "ru": "Russian",
     "en": "English",
-    "pt": "Português",
-    "de": "Deutsch",
-    "fr": "Français",
-    "es": "Español",
-    "it": "Italiano",
-    "tr": "Türkçe",
-    "uz": "Ўзбек",
+    "pt": "Portuguese",
+    "de": "German",
+    "fr": "French",
+    "es": "Spanish",
+    "it": "Italian",
+    "tr": "Turkish",
 }
 
 EMOJI_PREMIUM = {
@@ -49,3 +49,4 @@ EMOJI_PREMIUM = {
     "unban": "✔️",
     "broadcast": "📢",
 }
+

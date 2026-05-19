@@ -1,6 +1,6 @@
 import logging
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, User
+from aiogram.types import Message
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from datetime import datetime
@@ -17,30 +17,19 @@ from states import TranslateStates, AdminStates
 logger = logging.getLogger(__name__)
 router = Router()
 
-# Инициализируем db как None, будет установлена в main.py
 db = None
 
 def set_db(database):
-    """Установить экземпляр БД"""
     global db
     db = database
 
 
-# ==================== БУЙРУҚЛАР ====================
-
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
-    """Команда /start"""
     user = message.from_user
     await db.add_user(user.id, user.username or "Unknown", user.first_name or "User")
     
-    text = f"""
-Assalomu Aleykum ! 🧑‍💻
-
-Siz aktiv xolatdasiz 📲
-
-Quydagi menyudan tilni sozlab oling!
-"""
+    text = f"Assalomu Aleykum! {EMOJI_PREMIUM['start']}\n\nSiz aktiv xolatdasiz {EMOJI_PREMIUM['world']}\n\nQuydagi menyudan tilni sozlab oling!"
     
     await message.answer(text, reply_markup=get_source_language_keyboard())
     await state.clear()
@@ -48,126 +37,93 @@ Quydagi menyudan tilni sozlab oling!
 
 @router.message(Command("help"))
 async def cmd_help(message: Message):
-    """Команда /help"""
-    text = f"""
-{EMOJI_PREMIUM['info']} **ЁРДАМ - TranslateX ни қўллаш**
+    text = f"""ℹ️ YORDAM - TranslateX
 
-{EMOJI_PREMIUM['lightning']} **Асосий функциялар:**
+⚡ Asosiy funktsiyalar:
 
-1️⃣ Тарғима қилиш учун матнни юборинг
-2️⃣ Таклиф қилинган тиллардан целевой тилни танланг
-3️⃣ Чиройли тарғимани олинг {EMOJI_PREMIUM['magic']}
+1️⃣ Tarjima qilish uchun matnni yuboring
+2️⃣ Taklif qilingan tillardan maqsadli tilni tanlang
+3️⃣ Chiroyli tarjimani oling {EMOJI_PREMIUM['magic']}
 
-{EMOJI_PREMIUM['world']} **Мавжуд тиллар:**
-🇷🇺 Русский | 🇺🇸 Английский | 🇵🇹 Португальский
-🇩🇪 Немецкий | 🇫🇷 Французский | 🇪🇸 Испанский
-🇮🇹 Итальянский | 🇹🇷 Турецкий | 🇺🇿 Ўзбек
+🌍 Mavjud tillar:
+🇺🇿 Uzbek | 🇷🇺 Russian | 🇺🇸 English | 🇹🇷 Turkish
+🇵🇹 Portuguese | 🇩🇪 German | 🇫🇷 French | 🇮🇹 Italian
 
-{EMOJI_PREMIUM['diamond']} **Буйруқлар:**
-/start - Ишни бошлаш
-/help - Бу ёрдам
-/admin - Админ панели (фақат администраторлар учун)
+💎 Buyriqlar:
+/start - Ishni boshla
+/help - Bu yordam
 
-{EMOJI_PREMIUM['success']} Тайёрмисиз? Матнни юборинг!
-"""
+✅ Tayormisiz? Matnni yuboring!"""
     await message.answer(text)
 
 
-@router.message(Command("admin"))
-async def cmd_admin(message: Message):
-    """Команда /admin"""
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Доступ рад этилди!")
-        return
-    
-    text = f"""
-{EMOJI_PREMIUM['stats']} **АДМИН ПАНЕЛИ**
-
-Амални танланг:
-"""
-    await message.answer(text, reply_markup=get_admin_keyboard())
-
-
-# ==================== ТАРҒИМА ЖАРАЁНИ ====================
-
 @router.message(StateFilter(None), F.text)
 async def handle_source_language(message: Message, state: FSMContext):
-    """Выбор исходного языка"""
     user_id = message.from_user.id
     text = message.text.strip()
     
-    # Проверка бана
     if await db.is_banned(user_id):
-        await message.answer(f"{EMOJI_PREMIUM['error']} Сиз блокланган!")
+        await message.answer(f"{EMOJI_PREMIUM['error']} Siz bloklangan!")
         return
     
-    # Проверка если это выбор языка
-    if any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿", "🇮🇷", "🇯🇵", "🇰🇷"]):
+    if any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿"]):
         source_lang = lang_name_to_code(text)
         await state.update_data(source_lang=source_lang)
         await state.set_state(TranslateStates.waiting_for_text)
         
-        await message.answer(
-            f"{EMOJI_PREMIUM['translate']} Матнни юборинг:",
-        )
+        await message.answer(f"{EMOJI_PREMIUM['translate']} Matnni yuboring:")
         return
     
-    # Антиспам
     spam_count = await db.get_spam_count(user_id, minutes=1)
     if spam_count > 10:
         await db.log_spam(user_id, "spam_detected")
-        await message.answer(f"{EMOJI_PREMIUM['error']} Жуда кўп сўровлар! Кутинг...")
+        await message.answer(f"{EMOJI_PREMIUM['error']} Juda ko'p so'rovlar! Kuting...")
         return
     
     await db.log_spam(user_id, "translate_request")
     
     if len(text) == 0 or len(text) > 5000:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Матн 1 дан 5000 белгигача бўлиши керак!")
+        await message.answer(f"{EMOJI_PREMIUM['error']} Matn 1 dan 5000 belgigacha bo'lishi kerak!")
         return
     
-    # Если это просто текст, сохраняем его и просим выбрать исходный язык
     await state.update_data(source_text=text)
     await state.set_state(TranslateStates.waiting_for_source_lang)
     
     await message.answer(
-        f"{EMOJI_PREMIUM['world']} Матн қайси тилдан тарғима қилинсин?",
+        f"{EMOJI_PREMIUM['world']} Matn qaysi tildan tarjima qilinsin?",
         reply_markup=get_source_language_keyboard()
     )
 
 
 @router.message(TranslateStates.waiting_for_text, F.text)
 async def handle_text_input(message: Message, state: FSMContext):
-    """Получение текста для перевода"""
     user_id = message.from_user.id
     text = message.text.strip()
     
-    # Проверка бана
     if await db.is_banned(user_id):
-        await message.answer(f"{EMOJI_PREMIUM['error']} Сиз блокланган!")
+        await message.answer(f"{EMOJI_PREMIUM['error']} Siz bloklangan!")
         await state.clear()
         return
     
     if len(text) == 0 or len(text) > 5000:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Матн 1 дан 5000 белгигача бўлиши керак!")
+        await message.answer(f"{EMOJI_PREMIUM['error']} Matn 1 dan 5000 belgigacha bo'lishi kerak!")
         return
     
-    # Сохраняем текст и переходим к выбору целевого языка
     await state.update_data(source_text=text)
     await state.set_state(TranslateStates.waiting_for_target_lang)
     
     await message.answer(
-        f"{EMOJI_PREMIUM['world']} Матн қайси тилга тарғима қилинсин?",
+        f"{EMOJI_PREMIUM['world']} Matn qaysi tilga tarjima qilinsin?",
         reply_markup=get_target_language_keyboard()
     )
 
 
 @router.message(TranslateStates.waiting_for_source_lang, F.text)
 async def handle_source_lang_selection(message: Message, state: FSMContext):
-    """Выбор исходного языка"""
     text = message.text.strip()
     
-    if not any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿", "🇮🇷", "🇯🇵", "🇰🇷"]):
-        await message.answer(f"{EMOJI_PREMIUM['error']} Iltimos, тилни танланг!")
+    if not any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿"]):
+        await message.answer(f"{EMOJI_PREMIUM['error']} Iltimos, tilni tanlang!")
         return
     
     source_lang = lang_name_to_code(text)
@@ -175,25 +131,23 @@ async def handle_source_lang_selection(message: Message, state: FSMContext):
     await state.set_state(TranslateStates.waiting_for_target_lang)
     
     await message.answer(
-        f"{EMOJI_PREMIUM['world']} Матн қайси тилга тарғима қилинсин?",
+        f"{EMOJI_PREMIUM['world']} Matn qaysi tilga tarjima qilinsin?",
         reply_markup=get_target_language_keyboard()
     )
 
 
 @router.message(TranslateStates.waiting_for_target_lang, F.text)
 async def handle_target_lang_selection(message: Message, state: FSMContext):
-    """Выбор целевого языка и перевод"""
     user_id = message.from_user.id
     text = message.text.strip()
     
-    # Проверка бана
     if await db.is_banned(user_id):
-        await message.answer(f"{EMOJI_PREMIUM['error']} Сиз блокланган!")
+        await message.answer(f"{EMOJI_PREMIUM['error']} Siz bloklangan!")
         await state.clear()
         return
     
-    if not any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿", "🇮🇷", "🇯🇵", "🇰🇷"]):
-        await message.answer(f"{EMOJI_PREMIUM['error']} Iltimos, тилни танланг!")
+    if not any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿"]):
+        await message.answer(f"{EMOJI_PREMIUM['error']} Iltimos, tilni tanlang!")
         return
     
     target_lang = lang_name_to_code(text)
@@ -201,196 +155,23 @@ async def handle_target_lang_selection(message: Message, state: FSMContext):
     source_text = data.get("source_text", "")
     source_lang = data.get("source_lang", "auto")
     
-    # Переводим
-    await message.answer(f"{EMOJI_PREMIUM['lightning']} Тарғима қилинмоқда...")
+    await message.answer(f"{EMOJI_PREMIUM['lightning']} Tarjima qilinmoqda...")
     
     translated = await Translator.translate(source_text, source_lang=source_lang, target_lang=target_lang)
     
     if translated:
-        # Сохраняем в БД
         await db.add_translation(user_id, source_text, translated, source_lang, target_lang)
         
         target_lang_name = LANGUAGE_NAMES.get(target_lang, target_lang)
         source_lang_name = LANGUAGE_NAMES.get(source_lang, source_lang)
         
-        result_text = f"""
-{EMOJI_PREMIUM['success']} Таржима тайёр!
-
-{EMOJI_PREMIUM['world']} Манба тили: {source_lang_name}
-{EMOJI_PREMIUM['world']} Таржима тили: {target_lang_name}
-
-📝 Натижа: {translated}
-
-{EMOJI_PREMIUM['start']} Яна матн юборинг!
-"""
+        result_text = f"{EMOJI_PREMIUM['success']} Tarjima tayyor!\n\n{EMOJI_PREMIUM['world']} Manba tili: {source_lang_name}\n{EMOJI_PREMIUM['world']} Tarjima tili: {target_lang_name}\n\n📝 Natija: {translated}\n\n{EMOJI_PREMIUM['start']} Yana matn yuboring!"
+        
         await message.answer(result_text, reply_markup=get_source_language_keyboard())
     else:
         await message.answer(
-            f"{EMOJI_PREMIUM['error']} Тарғимада хато. Кейинроқ қўллаб кўринг.",
+            f"{EMOJI_PREMIUM['error']} Tarjimada xato. Keyinroq qo'llab ko'ring.",
             reply_markup=get_source_language_keyboard()
         )
     
     await state.clear()
-
-
-# ==================== АДМИН ФУНКЦИЯЛАРИ ====================
-
-@router.message(F.text.contains("Статистика"))
-async def admin_stats(message: Message):
-    """Статистика"""
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Доступ рад этилди!")
-        return
-    
-    stats = await db.get_stats()
-    
-    text = f"""
-{EMOJI_PREMIUM['stats']} **БОТ СТАТИСТИКАСИ**
-
-{EMOJI_PREMIUM['users']} Фаол фойдаланувчилар: {stats['total_users']}
-{EMOJI_PREMIUM['translate']} Жами тарғималар: {stats['total_translations']}
-{EMOJI_PREMIUM['ban']} Блокланган фойдаланувчилар: {stats['banned_users']}
-
-{EMOJI_PREMIUM['diamond']} Сана: {datetime.now().strftime('%d.%m.%Y %H:%M')}
-"""
-    await message.answer(text)
-
-
-@router.message(F.text.contains("Рассылка"))
-async def admin_broadcast_start(message: Message, state: FSMContext):
-    """Начало рассылки"""
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Доступ рад этилди!")
-        return
-    
-    await state.set_state(AdminStates.waiting_for_broadcast)
-    await message.answer(f"{EMOJI_PREMIUM['broadcast']} Трансляция учун матнни юборинг:")
-
-
-@router.message(AdminStates.waiting_for_broadcast)
-async def admin_broadcast_confirm(message: Message, state: FSMContext):
-    """Подтверждение рассылки"""
-    await state.update_data(broadcast_text=message.text)
-    await state.set_state(AdminStates.confirm_broadcast)
-    
-    text = f"""
-{EMOJI_PREMIUM['broadcast']} **Трансляцияни тасдиқлаш**
-
-Матн:
-```
-{message.text}
-```
-
-Сиз ишончи жойми?
-"""
-    await message.answer(text, reply_markup=get_confirm_keyboard())
-
-
-@router.callback_query(AdminStates.confirm_broadcast)
-async def admin_broadcast_execute(callback: CallbackQuery, state: FSMContext):
-    """Выполнение рассылки"""
-    if callback.data == "confirm_no":
-        await callback.message.answer(f"{EMOJI_PREMIUM['error']} Трансляция бекор қилинди")
-        await state.clear()
-        return
-    
-    data = await state.get_data()
-    broadcast_text = data.get("broadcast_text", "")
-    
-    users = await db.get_all_users()
-    sent = 0
-    
-    for user_tuple in users:
-        try:
-            user_id = user_tuple[0]
-            await callback.bot.send_message(
-                user_id,
-                f"{EMOJI_PREMIUM['broadcast']} **Администратордан сообщение:**\n\n{broadcast_text}"
-            )
-            sent += 1
-        except Exception as e:
-            logger.error(f"Фойдаланувчи {user_id} га сообщение юборишда хато: {e}")
-    
-    await callback.message.answer(
-        f"{EMOJI_PREMIUM['success']} Трансляция тамомланди!\n"
-        f"Юборилган сообщениялар: {sent}"
-    )
-    await state.clear()
-
-
-@router.message(F.text.contains("Бан"))
-async def admin_ban_start(message: Message, state: FSMContext):
-    """Начало процесса бана"""
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Доступ рад этилди!")
-        return
-    
-    await state.set_state(AdminStates.waiting_for_ban_user_id)
-    await message.answer(f"{EMOJI_PREMIUM['ban']} Блокланиши керак бўлган фойдаланувчи ID сини юборинг:")
-
-
-@router.message(AdminStates.waiting_for_ban_user_id)
-async def admin_ban_execute(message: Message, state: FSMContext):
-    """Выполнение бана"""
-    try:
-        user_id = int(message.text)
-        await db.ban_user(user_id)
-        await message.answer(f"{EMOJI_PREMIUM['success']} Фойдаланувчи {user_id} блокланди!")
-    except ValueError:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Нотўғри ID!")
-    
-    await state.clear()
-
-
-@router.message(F.text.contains("Разбан"))
-async def admin_unban_start(message: Message, state: FSMContext):
-    """Начало процесса разбана"""
-    if message.from_user.id not in ADMIN_IDS:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Доступ рад этилди!")
-        return
-    
-    await state.set_state(AdminStates.waiting_for_unban_user_id)
-    await message.answer(f"{EMOJI_PREMIUM['unban']} Блокни очиш керак бўлган фойдаланувчи ID сини юборинг:")
-
-
-@router.message(AdminStates.waiting_for_unban_user_id)
-async def admin_unban_execute(message: Message, state: FSMContext):
-    """Выполнение разбана"""
-    try:
-        user_id = int(message.text)
-        await db.unban_user(user_id)
-        await message.answer(f"{EMOJI_PREMIUM['success']} Фойдаланувчи {user_id} блокни очилди!")
-    except ValueError:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Нотўғри ID!")
-    
-    await state.clear()
-
-
-@router.message(F.text.contains("Назад"))
-async def admin_back(message: Message):
-    """Вернуться в главное меню"""
-    if message.from_user.id not in ADMIN_IDS:
-        return
-    
-    await message.answer(
-        f"{EMOJI_PREMIUM['start']} Асосий меню",
-        reply_markup=get_source_language_keyboard()
-    )
-
-
-# ==================== ТУГМАЛАРНИ ИШЛАШ ====================
-
-@router.message(F.text.contains("Выбрать язык"))
-async def select_language(message: Message, state: FSMContext):
-    """Выбор языка по умолчанию"""
-    await message.answer(
-        f"{EMOJI_PREMIUM['world']} Стандарт тилни танланг:",
-        reply_markup=get_source_language_keyboard()
-    )
-
-
-@router.message(F.text.contains("Перевести"))
-async def start_translate(message: Message, state: FSMContext):
-    """Начать перевод"""
-    await state.set_state(TranslateStates.waiting_for_text)
-    await message.answer(f"{EMOJI_PREMIUM['translate']} Тарғима қилиш учун матнни юборинг:")
