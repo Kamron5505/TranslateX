@@ -17,12 +17,12 @@ def get_language_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:
-    """Главная клавиатура"""
+    """Асосий клавиатура"""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=f"{EMOJI_PREMIUM['translate']} Перевести")],
-            [KeyboardButton(text=f"{EMOJI_PREMIUM['world']} Выбрать язык")],
-            [KeyboardButton(text=f"{EMOJI_PREMIUM['info']} Справка")]
+            [KeyboardButton(text=f"{EMOJI_PREMIUM['translate']} Тарғима қилиш")],
+            [KeyboardButton(text=f"{EMOJI_PREMIUM['world']} Тилни танланг")],
+            [KeyboardButton(text=f"{EMOJI_PREMIUM['info']} Ёрдам")]
         ],
         resize_keyboard=True,
         one_time_keyboard=False
@@ -34,9 +34,9 @@ def get_admin_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=f"{EMOJI_PREMIUM['stats']} Статистика")],
-            [KeyboardButton(text=f"{EMOJI_PREMIUM['broadcast']} Рассылка")],
+            [KeyboardButton(text=f"{EMOJI_PREMIUM['broadcast']} Трансляция")],
             [KeyboardButton(text=f"{EMOJI_PREMIUM['ban']} Бан/Разбан")],
-            [KeyboardButton(text="◀️ Назад")]
+            [KeyboardButton(text="◀️ Орқага")]
         ],
         resize_keyboard=True,
         one_time_keyboard=False
