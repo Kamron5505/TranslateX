@@ -2,39 +2,19 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
 from config import LANGUAGES, EMOJI_PREMIUM
 
 
-def get_language_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура выбора языка с названиями"""
-    buttons = []
-    
-    # Порядок языков с названиями
-    lang_order = [
-        ("ru", "🇷🇺 Tilni tanlang (ru)"),
-        ("en", "🇺🇸 Tilni tanlang (en)"),
-        ("pt", "🇵🇹 Tilni tanlang (pt)"),
-        ("de", "🇩🇪 Tilni tanlang (de)"),
-        ("fr", "🇫🇷 Tilni tanlang (fr)"),
-        ("es", "🇪🇸 Tilni tanlang (es)"),
-        ("it", "🇮🇹 Tilni tanlang (it)"),
-        ("tr", "🇹🇷 Tilni tanlang (tr)"),
-        ("uz", "🇺🇿 Tilni tanlang (uz)"),
-    ]
-    
-    # Создаем кнопки по 2 в ряду
-    for i in range(0, len(lang_order), 2):
-        row = []
-        for j in range(2):
-            if i + j < len(lang_order):
-                code, label = lang_order[i + j]
-                row.append(
-                    InlineKeyboardButton(
-                        text=label,
-                        callback_data=f"lang_{code}"
-                    )
-                )
-        if row:
-            buttons.append(row)
-    
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
+def get_language_keyboard() -> ReplyKeyboardMarkup:
+    """Клавиатура выбора языка с Reply Keyboard"""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🇷🇺 Tilni tanlang (ru)"), KeyboardButton(text="🇺🇸 Tilni tanlang (en)")],
+            [KeyboardButton(text="🇵🇹 Tilni tanlang (pt)"), KeyboardButton(text="🇩🇪 Tilni tanlang (de)")],
+            [KeyboardButton(text="🇫🇷 Tilni tanlang (fr)"), KeyboardButton(text="🇪🇸 Tilni tanlang (es)")],
+            [KeyboardButton(text="🇮🇹 Tilni tanlang (it)"), KeyboardButton(text="🇹🇷 Tilni tanlang (tr)")],
+            [KeyboardButton(text="🇺🇿 Tilni tanlang (uz)")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
 
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:

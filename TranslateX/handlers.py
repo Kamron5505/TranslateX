@@ -93,6 +93,20 @@ async def cmd_admin(message: Message):
 async def handle_text(message: Message, state: FSMContext):
     """Обработка текста от пользователя"""
     user_id = message.from_user.id
+    text = message.text.strip()
+    
+    # Проверка если это выбор языка
+    if "Tilni tanlang" in text:
+        # Извлекаем код языка из текста (например "ru" из "🇷🇺 Tilni tanlang (ru)")
+        lang_code = text.split("(")[-1].rstrip(")")
+        await db.set_language(user_id, lang_code)
+        
+        lang_name = LANGUAGE_NAMES.get(lang_code, lang_code)
+        await message.answer(
+            f"{EMOJI_PREMIUM['success']} Тил ўрнатилди: {lang_name}",
+            reply_markup=get_language_keyboard()
+        )
+        return
     
     # Проверка бана
     if await db.is_banned(user_id):
@@ -108,8 +122,6 @@ async def handle_text(message: Message, state: FSMContext):
     
     await db.log_spam(user_id, "translate_request")
     
-    text = message.text.strip()
-    
     if len(text) == 0 or len(text) > 5000:
         await message.answer(f"{EMOJI_PREMIUM['error']} Матн 1 дан 5000 белгигача бўлиши керак!")
         return
@@ -124,25 +136,29 @@ async def handle_text(message: Message, state: FSMContext):
     )
 
 
-@router.callback_query(TranslateStates.waiting_for_language, F.data.startswith("lang_"))
-async def handle_language_selection(callback: CallbackQuery, state: FSMContext):
-    """Обработка выбора языка"""
-    user_id = callback.from_user.id
+@router.message(TranslateStates.waiting_for_language, F.text)
+async def handle_language_selection(message: Message, state: FSMContext):
+    """Обработка выбора языка из Reply Keyboard"""
+    user_id = message.from_user.id
+    text = message.text.strip()
     
     # Проверка бана
     if await db.is_banned(user_id):
-        await callback.answer(f"{EMOJI_PREMIUM['error']} Сиз блокланган!", show_alert=True)
+        await message.answer(f"{EMOJI_PREMIUM['error']} Сиз блокланган!")
+        await state.clear()
         return
     
-    target_lang = callback.data.split("_")[1]
+    # Извлекаем код языка из текста (например "ru" из "🇷🇺 Tilni tanlang (ru)")
+    if "Tilni tanlang" not in text:
+        await message.answer(f"{EMOJI_PREMIUM['error']} Iltimos, тилни танланг!")
+        return
+    
+    target_lang = text.split("(")[-1].rstrip(")")
     data = await state.get_data()
     source_text = data.get("source_text", "")
     
-    # Получаем язык пользователя
-    user_lang = await db.get_language(user_id)
-    
     # Переводим
-    await callback.answer(f"{EMOJI_PREMIUM['lightning']} Тарғима қилинмоқда...", show_alert=False)
+    await message.answer(f"{EMOJI_PREMIUM['lightning']} Тарғима қилинмоқда...")
     
     translated = await Translator.translate(source_text, source_lang="auto", target_lang=target_lang)
     
@@ -164,10 +180,11 @@ async def handle_language_selection(callback: CallbackQuery, state: FSMContext):
 
 {EMOJI_PREMIUM['diamond']} Яна матнни юборинг!
 """
-        await callback.message.answer(result_text)
+        await message.answer(result_text, reply_markup=get_language_keyboard())
     else:
-        await callback.message.answer(
-            f"{EMOJI_PREMIUM['error']} Тарғимада хато. Кейинроқ қўллаб кўринг."
+        await message.answer(
+            f"{EMOJI_PREMIUM['error']} Тарғимада хато. Кейинроқ қўллаб кўринг.",
+            reply_markup=get_language_keyboard()
         )
     
     await state.clear()
@@ -329,16 +346,21 @@ async def select_language(message: Message, state: FSMContext):
     )
 
 
-@router.callback_query(F.data.startswith("lang_"), StateFilter(None))
-async def set_default_language(callback: CallbackQuery):
+@router.message(F.text.contains("Tilni tanlang"), StateFilter(None))
+async def set_default_language(message: Message):
     """Установить язык по умолчанию"""
-    target_lang = callback.data.split("_")[1]
-    await db.set_language(callback.from_user.id, target_lang)
+    text = message.text.strip()
+    
+    if "Tilni tanlang" not in text:
+        return
+    
+    target_lang = text.split("(")[-1].rstrip(")")
+    await db.set_language(message.from_user.id, target_lang)
     
     lang_name = LANGUAGE_NAMES.get(target_lang, target_lang)
-    await callback.answer(
+    await message.answer(
         f"{EMOJI_PREMIUM['success']} Тил ўрнатилди: {lang_name}",
-        show_alert=True
+        reply_markup=get_language_keyboard()
     )
 
 
