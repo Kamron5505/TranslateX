@@ -3,6 +3,7 @@ import logging
 import os
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import BotCommand, BotCommandScopeDefault
 from dotenv import load_dotenv
 
 from config import BOT_TOKEN, LOG_LEVEL, DATABASE_PATH, EMOJI_PREMIUM
@@ -21,6 +22,17 @@ logger = logging.getLogger(__name__)
 
 # Инициализация БД
 db = Database()
+
+
+async def set_commands(bot: Bot):
+    """Установить команды бота"""
+    commands = [
+        BotCommand(command="start", description="Botni ishga tushurish"),
+        BotCommand(command="help", description="Yordam olish"),
+        BotCommand(command="admin", description="Admin paneli"),
+    ]
+    await bot.set_my_commands(commands, BotCommandScopeDefault())
+    logger.info("✅ Buyriqlar o'rnatildi")
 
 
 async def main():
@@ -45,20 +57,24 @@ async def main():
     storage = MemoryStorage()
     dp = Dispatcher(storage=storage)
     
+    # Установка команд
+    await set_commands(bot)
+    
     # Подключение роутера
     dp.include_router(router)
     
-    logger.info(f"{EMOJI_PREMIUM['start']} TranslateX бот запущен!")
-    logger.info(f"{EMOJI_PREMIUM['diamond']} Версия: 1.0.0")
-    logger.info(f"{EMOJI_PREMIUM['lightning']} Ожидание сообщений...")
+    logger.info(f"{EMOJI_PREMIUM['start']} TranslateX boti ishga tushdi!")
+    logger.info(f"{EMOJI_PREMIUM['diamond']} Versiya: 1.0.0")
+    logger.info(f"{EMOJI_PREMIUM['lightning']} Xabarlarni kutmoqda...")
     
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     except KeyboardInterrupt:
-        logger.info(f"{EMOJI_PREMIUM['error']} Бот остановлен пользователем")
+        logger.info(f"{EMOJI_PREMIUM['error']} Bot to'xtatildi")
     finally:
         await bot.session.close()
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+

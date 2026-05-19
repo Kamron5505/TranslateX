@@ -34,18 +34,11 @@ async def cmd_start(message: Message, state: FSMContext):
     await db.add_user(user.id, user.username or "Unknown", user.first_name or "User")
     
     text = f"""
-{EMOJI_PREMIUM['start']} **TranslateX - Премиум Тарғимон**
+Assalomu Aleykum ! 🧑‍💻
 
-{EMOJI_PREMIUM['diamond']} Хуш келибсиз, {user.first_name}!
+Siz aktiv xolatdasiz 📲
 
-{EMOJI_PREMIUM['lightning']} Ҳар қандай матнни юборинг ва тарғима қилиш учун тилни танланг.
-
-{EMOJI_PREMIUM['world']} Қўллаб-қувватланадиган тиллар:
-🇷🇺 Русский | 🇺🇸 Английский | 🇵🇹 Португальский
-🇩🇪 Немецкий | 🇫🇷 Французский | 🇪🇸 Испанский
-🇮🇹 Итальянский | 🇹🇷 Турецкий | 🇺🇿 Ўзбек
-
-{EMOJI_PREMIUM['magic']} Ёрдам олиш учун /help ишлатинг
+Quydagi menyudan tilni sozlab oling!
 """
     
     await message.answer(text, reply_markup=get_language_keyboard())
