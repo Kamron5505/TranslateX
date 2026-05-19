@@ -141,7 +141,7 @@ async def handle_target_lang_selection(message: Message, state: FSMContext):
     source_text = data.get("source_text", "")
     source_lang = data.get("source_lang", "auto")
     
-    logger.info(f"Tarjima: {source_lang} -> {target_lang}")
+    logger.info(f"Tarjima parametrlari: source_lang={source_lang}, target_lang={target_lang}, text={source_text[:50]}")
     
     await message.answer(f"{EMOJI_PREMIUM['lightning']} Tarjima qilinmoqda...")
     

@@ -4,17 +4,17 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Маппинг кодов языков для Google Translate
+# Правильные коды языков для Google Translate
 GOOGLE_LANG_CODES = {
-    "uz": "uz",
-    "ru": "ru",
-    "en": "en",
-    "pt": "pt",
-    "de": "de",
-    "fr": "fr",
-    "es": "es",
-    "it": "it",
-    "tr": "tr",
+    "uz": "uz",      # Uzbek
+    "ru": "ru",      # Russian
+    "en": "en",      # English
+    "pt": "pt",      # Portuguese
+    "de": "de",      # German
+    "fr": "fr",      # French
+    "es": "es",      # Spanish
+    "it": "it",      # Italian
+    "tr": "tr",      # Turkish
 }
 
 
@@ -43,10 +43,12 @@ class Translator:
             google_target = GOOGLE_LANG_CODES.get(target_lang, target_lang)
             google_source = source_lang if source_lang == "auto" else GOOGLE_LANG_CODES.get(source_lang, source_lang)
             
+            logger.info(f"Tarjima: {google_source} -> {google_target}, Matn: {text[:50]}")
+            
             translator = GoogleTranslator(source_language=google_source, target_language=google_target)
             result = translator.translate(text)
             
-            logger.info(f"Tarjima muvaffaqiyatli: {source_lang} → {target_lang}")
+            logger.info(f"Tarjima muvaffaqiyatli: {source_lang} -> {target_lang}, Natija: {result[:50]}")
             return result
             
         except Exception as e:
