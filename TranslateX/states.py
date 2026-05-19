@@ -3,8 +3,9 @@ from aiogram.fsm.state import State, StatesGroup
 
 class TranslateStates(StatesGroup):
     """Состояния для перевода"""
+    waiting_for_source_lang = State()
+    waiting_for_target_lang = State()
     waiting_for_text = State()
-    waiting_for_language = State()
 
 
 class AdminStates(StatesGroup):

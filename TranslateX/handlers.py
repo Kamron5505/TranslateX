@@ -9,7 +9,8 @@ from config import EMOJI_PREMIUM, LANGUAGES, LANGUAGE_NAMES, ADMIN_IDS
 from database import Database
 from translator import Translator
 from keyboards import (
-    get_language_keyboard, get_main_keyboard, get_admin_keyboard, get_confirm_keyboard
+    get_language_keyboard, get_main_keyboard, get_admin_keyboard, get_confirm_keyboard,
+    get_source_language_keyboard, get_target_language_keyboard, lang_name_to_code
 )
 from states import TranslateStates, AdminStates
 
@@ -41,7 +42,7 @@ Siz aktiv xolatdasiz 📲
 Quydagi menyudan tilni sozlab oling!
 """
     
-    await message.answer(text, reply_markup=get_language_keyboard())
+    await message.answer(text, reply_markup=get_source_language_keyboard())
     await state.clear()
 
 
@@ -87,30 +88,28 @@ async def cmd_admin(message: Message):
     await message.answer(text, reply_markup=get_admin_keyboard())
 
 
-# ==================== МАТННИ ИШЛАШ ====================
+# ==================== ТАРҒИМА ЖАРАЁНИ ====================
 
 @router.message(StateFilter(None), F.text)
-async def handle_text(message: Message, state: FSMContext):
-    """Обработка текста от пользователя"""
+async def handle_source_language(message: Message, state: FSMContext):
+    """Выбор исходного языка"""
     user_id = message.from_user.id
     text = message.text.strip()
-    
-    # Проверка если это выбор языка
-    if "Tilni tanlang" in text:
-        # Извлекаем код языка из текста (например "ru" из "🇷🇺 Tilni tanlang (ru)")
-        lang_code = text.split("(")[-1].rstrip(")")
-        await db.set_language(user_id, lang_code)
-        
-        lang_name = LANGUAGE_NAMES.get(lang_code, lang_code)
-        await message.answer(
-            f"{EMOJI_PREMIUM['success']} Тил ўрнатилди: {lang_name}",
-            reply_markup=get_language_keyboard()
-        )
-        return
     
     # Проверка бана
     if await db.is_banned(user_id):
         await message.answer(f"{EMOJI_PREMIUM['error']} Сиз блокланган!")
+        return
+    
+    # Проверка если это выбор языка
+    if any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿", "🇮🇷", "🇯🇵", "🇰🇷"]):
+        source_lang = lang_name_to_code(text)
+        await state.update_data(source_lang=source_lang)
+        await state.set_state(TranslateStates.waiting_for_text)
+        
+        await message.answer(
+            f"{EMOJI_PREMIUM['translate']} Матнни юборинг:",
+        )
         return
     
     # Антиспам
@@ -126,19 +125,19 @@ async def handle_text(message: Message, state: FSMContext):
         await message.answer(f"{EMOJI_PREMIUM['error']} Матн 1 дан 5000 белгигача бўлиши керак!")
         return
     
-    # Сохраняем текст в контексте
+    # Если это просто текст, сохраняем его и просим выбрать исходный язык
     await state.update_data(source_text=text)
-    await state.set_state(TranslateStates.waiting_for_language)
+    await state.set_state(TranslateStates.waiting_for_source_lang)
     
     await message.answer(
-        f"{EMOJI_PREMIUM['world']} Тарғима қилиш учун тилни танланг:",
-        reply_markup=get_language_keyboard()
+        f"{EMOJI_PREMIUM['world']} Матн қайси тилдан тарғима қилинсин?",
+        reply_markup=get_source_language_keyboard()
     )
 
 
-@router.message(TranslateStates.waiting_for_language, F.text)
-async def handle_language_selection(message: Message, state: FSMContext):
-    """Обработка выбора языка из Reply Keyboard"""
+@router.message(TranslateStates.waiting_for_text, F.text)
+async def handle_text_input(message: Message, state: FSMContext):
+    """Получение текста для перевода"""
     user_id = message.from_user.id
     text = message.text.strip()
     
@@ -148,29 +147,76 @@ async def handle_language_selection(message: Message, state: FSMContext):
         await state.clear()
         return
     
-    # Извлекаем код языка из текста (например "ru" из "🇷🇺 Tilni tanlang (ru)")
-    if "Tilni tanlang" not in text:
+    if len(text) == 0 or len(text) > 5000:
+        await message.answer(f"{EMOJI_PREMIUM['error']} Матн 1 дан 5000 белгигача бўлиши керак!")
+        return
+    
+    # Сохраняем текст и переходим к выбору целевого языка
+    await state.update_data(source_text=text)
+    await state.set_state(TranslateStates.waiting_for_target_lang)
+    
+    await message.answer(
+        f"{EMOJI_PREMIUM['world']} Матн қайси тилга тарғима қилинсин?",
+        reply_markup=get_target_language_keyboard()
+    )
+
+
+@router.message(TranslateStates.waiting_for_source_lang, F.text)
+async def handle_source_lang_selection(message: Message, state: FSMContext):
+    """Выбор исходного языка"""
+    text = message.text.strip()
+    
+    if not any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿", "🇮🇷", "🇯🇵", "🇰🇷"]):
         await message.answer(f"{EMOJI_PREMIUM['error']} Iltimos, тилни танланг!")
         return
     
-    target_lang = text.split("(")[-1].rstrip(")")
+    source_lang = lang_name_to_code(text)
+    await state.update_data(source_lang=source_lang)
+    await state.set_state(TranslateStates.waiting_for_target_lang)
+    
+    await message.answer(
+        f"{EMOJI_PREMIUM['world']} Матн қайси тилга тарғима қилинсин?",
+        reply_markup=get_target_language_keyboard()
+    )
+
+
+@router.message(TranslateStates.waiting_for_target_lang, F.text)
+async def handle_target_lang_selection(message: Message, state: FSMContext):
+    """Выбор целевого языка и перевод"""
+    user_id = message.from_user.id
+    text = message.text.strip()
+    
+    # Проверка бана
+    if await db.is_banned(user_id):
+        await message.answer(f"{EMOJI_PREMIUM['error']} Сиз блокланган!")
+        await state.clear()
+        return
+    
+    if not any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇵🇹", "🇩🇪", "🇫🇷", "🇪🇸", "🇮🇹", "🇹🇷", "🇺🇿", "🇮🇷", "🇯🇵", "🇰🇷"]):
+        await message.answer(f"{EMOJI_PREMIUM['error']} Iltimos, тилни танланг!")
+        return
+    
+    target_lang = lang_name_to_code(text)
     data = await state.get_data()
     source_text = data.get("source_text", "")
+    source_lang = data.get("source_lang", "auto")
     
     # Переводим
     await message.answer(f"{EMOJI_PREMIUM['lightning']} Тарғима қилинмоқда...")
     
-    translated = await Translator.translate(source_text, source_lang="auto", target_lang=target_lang)
+    translated = await Translator.translate(source_text, source_lang=source_lang, target_lang=target_lang)
     
     if translated:
         # Сохраняем в БД
-        await db.add_translation(user_id, source_text, translated, "auto", target_lang)
+        await db.add_translation(user_id, source_text, translated, source_lang, target_lang)
         
         target_lang_name = LANGUAGE_NAMES.get(target_lang, target_lang)
+        source_lang_name = LANGUAGE_NAMES.get(source_lang, source_lang)
         
         result_text = f"""
 {EMOJI_PREMIUM['success']} **Тарғима тайёр!**
 
+{EMOJI_PREMIUM['magic']} **Манба тил:** {source_lang_name}
 {EMOJI_PREMIUM['magic']} **Целевой тил:** {target_lang_name}
 
 📝 **Натижа:**
@@ -180,11 +226,11 @@ async def handle_language_selection(message: Message, state: FSMContext):
 
 {EMOJI_PREMIUM['diamond']} Яна матнни юборинг!
 """
-        await message.answer(result_text, reply_markup=get_language_keyboard())
+        await message.answer(result_text, reply_markup=get_source_language_keyboard())
     else:
         await message.answer(
             f"{EMOJI_PREMIUM['error']} Тарғимада хато. Кейинроқ қўллаб кўринг.",
-            reply_markup=get_language_keyboard()
+            reply_markup=get_source_language_keyboard()
         )
     
     await state.clear()
@@ -331,7 +377,7 @@ async def admin_back(message: Message):
     
     await message.answer(
         f"{EMOJI_PREMIUM['start']} Асосий меню",
-        reply_markup=get_language_keyboard()
+        reply_markup=get_source_language_keyboard()
     )
 
 
@@ -342,25 +388,7 @@ async def select_language(message: Message, state: FSMContext):
     """Выбор языка по умолчанию"""
     await message.answer(
         f"{EMOJI_PREMIUM['world']} Стандарт тилни танланг:",
-        reply_markup=get_language_keyboard()
-    )
-
-
-@router.message(F.text.contains("Tilni tanlang"), StateFilter(None))
-async def set_default_language(message: Message):
-    """Установить язык по умолчанию"""
-    text = message.text.strip()
-    
-    if "Tilni tanlang" not in text:
-        return
-    
-    target_lang = text.split("(")[-1].rstrip(")")
-    await db.set_language(message.from_user.id, target_lang)
-    
-    lang_name = LANGUAGE_NAMES.get(target_lang, target_lang)
-    await message.answer(
-        f"{EMOJI_PREMIUM['success']} Тил ўрнатилди: {lang_name}",
-        reply_markup=get_language_keyboard()
+        reply_markup=get_source_language_keyboard()
     )
 
 

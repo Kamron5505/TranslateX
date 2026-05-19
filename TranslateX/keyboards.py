@@ -1,20 +1,36 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
-from config import LANGUAGES, EMOJI_PREMIUM
+from config import LANGUAGES, EMOJI_PREMIUM, LANGUAGE_NAMES
 
 
-def get_language_keyboard() -> ReplyKeyboardMarkup:
-    """Клавиатура выбора языка с Reply Keyboard"""
+def get_source_language_keyboard() -> ReplyKeyboardMarkup:
+    """Клавиатура выбора исходного языка"""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🇷🇺 Tilni tanlang (ru)"), KeyboardButton(text="🇺🇸 Tilni tanlang (en)")],
-            [KeyboardButton(text="🇵🇹 Tilni tanlang (pt)"), KeyboardButton(text="🇩🇪 Tilni tanlang (de)")],
-            [KeyboardButton(text="🇫🇷 Tilni tanlang (fr)"), KeyboardButton(text="🇪🇸 Tilni tanlang (es)")],
-            [KeyboardButton(text="🇮🇹 Tilni tanlang (it)"), KeyboardButton(text="🇹🇷 Tilni tanlang (tr)")],
-            [KeyboardButton(text="🇺🇿 Tilni tanlang (uz)")],
+            [KeyboardButton(text="🇺🇿 Uzbek"), KeyboardButton(text="🇷🇺 Russian"), KeyboardButton(text="🇺🇸 English"), KeyboardButton(text="🇹🇷 Türkçe")],
+            [KeyboardButton(text="🇵🇹 Qozoq"), KeyboardButton(text="🇩🇪 Tojik"), KeyboardButton(text="🇫🇷 Qirg'iz"), KeyboardButton(text="🇮🇹 Arabic")],
+            [KeyboardButton(text="🇮🇷 Iran"), KeyboardButton(text="🇯🇵 Japan"), KeyboardButton(text="🇰🇷 Korean"), KeyboardButton(text="🇪🇸 Spanish")],
         ],
         resize_keyboard=True,
         one_time_keyboard=False
     )
+
+
+def get_target_language_keyboard() -> ReplyKeyboardMarkup:
+    """Клавиатура выбора целевого языка"""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🇺🇿 Uzbek"), KeyboardButton(text="🇷🇺 Russian"), KeyboardButton(text="🇺🇸 English"), KeyboardButton(text="🇹🇷 Türkçe")],
+            [KeyboardButton(text="🇵🇹 Qozoq"), KeyboardButton(text="🇩🇪 Tojik"), KeyboardButton(text="🇫🇷 Qirg'iz"), KeyboardButton(text="🇮🇹 Arabic")],
+            [KeyboardButton(text="🇮🇷 Iran"), KeyboardButton(text="🇯🇵 Japan"), KeyboardButton(text="🇰🇷 Korean"), KeyboardButton(text="🇪🇸 Spanish")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
+
+
+def get_language_keyboard() -> ReplyKeyboardMarkup:
+    """Клавиатура выбора языка (для совместимости)"""
+    return get_source_language_keyboard()
 
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:
@@ -54,3 +70,28 @@ def get_confirm_keyboard() -> InlineKeyboardMarkup:
             ]
         ]
     )
+
+
+def lang_name_to_code(lang_name: str) -> str:
+    """Преобразовать название языка в код"""
+    lang_map = {
+        "Uzbek": "uz",
+        "Russian": "ru",
+        "English": "en",
+        "Türkçe": "tr",
+        "Qozoq": "pt",
+        "Tojik": "de",
+        "Qirg'iz": "fr",
+        "Arabic": "it",
+        "Iran": "fa",
+        "Japan": "ja",
+        "Korean": "ko",
+        "Spanish": "es",
+    }
+    
+    # Извлекаем название из текста (например "🇷🇺 Russian" -> "Russian")
+    for key, code in lang_map.items():
+        if key in lang_name:
+            return code
+    
+    return "uz"  # По умолчанию узбекский
