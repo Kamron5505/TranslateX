@@ -1,17 +1,37 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
-from config import LANGUAGES, EMOJI_PREMIUM
+from config import LANGUAGES, EMOJI_PREMIUM, LANGUAGE_NAMES
 
 
 def get_language_keyboard() -> InlineKeyboardMarkup:
-    """Клавиатура выбора языка"""
+    """Клавиатура выбора языка с флагами и названиями"""
     buttons = []
-    for emoji, code in LANGUAGES.items():
-        buttons.append([
-            InlineKeyboardButton(
-                text=f"{emoji}",
-                callback_data=f"lang_{code}"
-            )
-        ])
+    
+    # Порядок языков для красивого отображения
+    lang_order = [
+        ("uz", "🇺🇿 Uzbek"),
+        ("ru", "🇷🇺 Russian"),
+        ("en", "🇺🇸 English"),
+        ("tr", "🇹🇷 Türkçe"),
+        ("pt", "🇵🇹 Qozoq"),
+        ("de", "🇩🇪 Tojik"),
+        ("fr", "🇫🇷 Qirg'iz"),
+        ("it", "🇮🇹 Arabic"),
+    ]
+    
+    # Создаем кнопки по 2 в ряду
+    for i in range(0, len(lang_order), 2):
+        row = []
+        for j in range(2):
+            if i + j < len(lang_order):
+                code, label = lang_order[i + j]
+                row.append(
+                    InlineKeyboardButton(
+                        text=label,
+                        callback_data=f"lang_{code}"
+                    )
+                )
+        if row:
+            buttons.append(row)
     
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -48,8 +68,8 @@ def get_confirm_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text=f"{EMOJI_PREMIUM['success']} Да", callback_data="confirm_yes"),
-                InlineKeyboardButton(text=f"{EMOJI_PREMIUM['error']} Нет", callback_data="confirm_no")
+                InlineKeyboardButton(text=f"{EMOJI_PREMIUM['success']} Ҳа", callback_data="confirm_yes"),
+                InlineKeyboardButton(text=f"{EMOJI_PREMIUM['error']} Йўқ", callback_data="confirm_no")
             ]
         ]
     )
