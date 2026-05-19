@@ -3,7 +3,7 @@ import logging
 import os
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import BotCommand, BotCommandScopeDefault
+from aiogram.types import BotCommand, BotCommandScopeDefault, MenuButtonCommands
 from dotenv import load_dotenv
 
 from config import BOT_TOKEN, LOG_LEVEL, DATABASE_PATH, EMOJI_PREMIUM
@@ -35,6 +35,13 @@ async def set_commands(bot: Bot):
     logger.info("✅ Buyriqlar o'rnatildi")
 
 
+async def set_menu_button(bot: Bot):
+    """Установить кнопку меню"""
+    menu_button = MenuButtonCommands()
+    await bot.set_chat_menu_button(menu_button=menu_button)
+    logger.info("✅ Menu tugmasi o'rnatildi")
+
+
 async def main():
     """Главная функция"""
     
@@ -59,6 +66,9 @@ async def main():
     
     # Установка команд
     await set_commands(bot)
+    
+    # Установка кнопки меню
+    await set_menu_button(bot)
     
     # Подключение роутера
     dp.include_router(router)
