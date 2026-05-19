@@ -214,17 +214,14 @@ async def handle_target_lang_selection(message: Message, state: FSMContext):
         source_lang_name = LANGUAGE_NAMES.get(source_lang, source_lang)
         
         result_text = f"""
-{EMOJI_PREMIUM['success']} **Тарғима тайёр!**
+{EMOJI_PREMIUM['success']} Таржима тайёр!
 
-{EMOJI_PREMIUM['magic']} **Манба тил:** {source_lang_name}
-{EMOJI_PREMIUM['magic']} **Целевой тил:** {target_lang_name}
+{EMOJI_PREMIUM['world']} Манба тили: {source_lang_name}
+{EMOJI_PREMIUM['world']} Таржима тили: {target_lang_name}
 
-📝 **Натижа:**
-```
-{translated}
-```
+📝 Натижа: {translated}
 
-{EMOJI_PREMIUM['diamond']} Яна матнни юборинг!
+{EMOJI_PREMIUM['start']} Яна матн юборинг!
 """
         await message.answer(result_text, reply_markup=get_source_language_keyboard())
     else:
