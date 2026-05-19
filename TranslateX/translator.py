@@ -1,11 +1,14 @@
 import logging
-from deep_translator import GoogleTranslator
+import aiohttp
 from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Маппинг кодов языков для Google Translate
-GOOGLE_LANG_CODES = {
+# LibreTranslate API endpoint
+LIBRETRANSLATE_API = "https://libretranslate.com/translate"
+
+# Маппинг кодов языков для LibreTranslate
+LIBRETRANSLATE_LANG_CODES = {
     "uz": "uz",
     "ru": "ru",
     "en": "en",
@@ -22,7 +25,7 @@ class Translator:
     @staticmethod
     async def translate(text: str, source_lang: str = "auto", target_lang: str = "uz") -> Optional[str]:
         """
-        Перевести текст используя Google Translate
+        Перевести текст используя LibreTranslate API
         
         Args:
             text: Текст для перевода
@@ -39,15 +42,26 @@ class Translator:
             if len(text) > 5000:
                 text = text[:5000]
             
-            # Преобразуем коды языков для Google Translate
-            google_target = GOOGLE_LANG_CODES.get(target_lang, target_lang)
-            google_source = source_lang if source_lang == "auto" else GOOGLE_LANG_CODES.get(source_lang, source_lang)
+            # Преобразуем коды языков для LibreTranslate
+            target_code = LIBRETRANSLATE_LANG_CODES.get(target_lang, target_lang)
+            source_code = source_lang if source_lang == "auto" else LIBRETRANSLATE_LANG_CODES.get(source_lang, source_lang)
             
-            translator = GoogleTranslator(source_language=google_source, target_language=google_target)
-            result = translator.translate(text)
+            payload = {
+                "q": text,
+                "source": source_code,
+                "target": target_code
+            }
             
-            logger.info(f"Tarjima muvaffaqiyatli: {source_lang} → {target_lang}")
-            return result
+            async with aiohttp.ClientSession() as session:
+                async with session.post(LIBRETRANSLATE_API, json=payload) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        result = data.get("translatedText")
+                        logger.info(f"Tarjima muvaffaqiyatli: {source_lang} → {target_lang}")
+                        return result
+                    else:
+                        logger.error(f"LibreTranslate API xatosi: {response.status}")
+                        return None
             
         except Exception as e:
             logger.error(f"Tarjimada xato: {str(e)}")
