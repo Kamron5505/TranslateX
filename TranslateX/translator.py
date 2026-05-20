@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 import asyncio
 import aiohttp
+import html
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,7 @@ class Translator:
     @staticmethod
     async def translate(text: str, source_lang: str = "auto", target_lang: str = "uz") -> Optional[str]:
         """
-        Перевести текст используя MyMemory API
+        Перевести текст используя MyMemory API с fallback
         
         Args:
             text: Текст для перевода
@@ -29,6 +30,31 @@ class Translator:
             
             logger.info(f"Tarjima: {source_lang} -> {target_lang}, Matn: {text[:50]}")
             
+            # Сначала пытаемся прямой перевод
+            result = await Translator._translate_mymemory(text, source_lang, target_lang)
+            if result:
+                return html.unescape(result)
+            
+            # Если не получилось и целевой язык узбекский, пытаемся через английский
+            if target_lang == "uz" and source_lang != "en":
+                logger.info(f"Fallback: {source_lang} -> en -> uz")
+                en_result = await Translator._translate_mymemory(text, source_lang, "en")
+                if en_result:
+                    uz_result = await Translator._translate_mymemory(en_result, "en", "uz")
+                    if uz_result:
+                        return html.unescape(uz_result)
+            
+            logger.error(f"Tarjima xatosi: {source_lang} -> {target_lang}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Tarjimada xato: {str(e)}")
+            return None
+
+    @staticmethod
+    async def _translate_mymemory(text: str, source_lang: str, target_lang: str) -> Optional[str]:
+        """Перевод через MyMemory API"""
+        try:
             # Map language codes to language pairs for MyMemory
             lang_pairs = {
                 ("auto", "uz"): "en|uz",
@@ -84,11 +110,10 @@ class Translator:
                                 logger.info(f"Tarjima muvaffaqiyatli: {source_lang} -> {target_lang}, Natija: {translated_text[:50]}")
                                 return translated_text
             
-            logger.error(f"MyMemory API xatosi: {source_lang} -> {target_lang}")
             return None
             
         except Exception as e:
-            logger.error(f"Tarjimada xato: {str(e)}")
+            logger.error(f"MyMemory xatosi: {str(e)}")
             return None
 
     @staticmethod
