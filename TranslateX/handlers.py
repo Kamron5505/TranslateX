@@ -3,14 +3,12 @@ from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
-from datetime import datetime
 
 from config import EMOJI_PREMIUM, LANGUAGES, LANGUAGE_NAMES, ADMIN_IDS
 from database import Database
 from translator import Translator
 from keyboards import (
-    get_language_keyboard, get_main_keyboard, get_admin_keyboard, get_confirm_keyboard,
-    get_source_language_keyboard, get_target_language_keyboard, lang_name_to_code
+    get_main_menu_keyboard, get_language_selection_keyboard, lang_name_to_code
 )
 from states import TranslateStates, AdminStates
 
@@ -29,10 +27,10 @@ async def cmd_start(message: Message, state: FSMContext):
     user = message.from_user
     await db.add_user(user.id, user.username or "Unknown", user.first_name or "User")
     
-    text = f"Assalomu Aleykum! {EMOJI_PREMIUM['start']}\n\nSiz aktiv xolatdasiz {EMOJI_PREMIUM['world']}\n\nQuydagi menyudan tilni sozlab oling!"
+    text = f"Siz aktiv xolatdasiz\n\nQuydagi menyudan tilni sozlab oling!"
     
-    await message.answer(text, reply_markup=get_source_language_keyboard())
-    await state.clear()
+    await state.set_state(TranslateStates.main_menu)
+    await message.answer(text, reply_markup=get_main_menu_keyboard())
 
 
 @router.message(Command("help"))
@@ -43,7 +41,7 @@ async def cmd_help(message: Message):
 
 1️⃣ Tarjima qilish uchun matnni yuboring
 2️⃣ Taklif qilingan tillardan maqsadli tilni tanlang
-3️⃣ Chiroyli tarjimani oling {EMOJI_PREMIUM['magic']}
+3️⃣ Chiroyli tarjimani oling
 
 🌍 Mavjud tillar:
 🇺🇿 Uzbek | 🇷🇺 Russian | 🇺🇸 English
@@ -57,140 +55,113 @@ async def cmd_help(message: Message):
     await message.answer(text)
 
 
-@router.message(StateFilter(None), F.text)
-async def handle_source_language(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    text = message.text.strip()
-    
-    if await db.is_banned(user_id):
-        await message.answer(f"{EMOJI_PREMIUM['error']} Siz bloklangan!")
-        return
-    
-    # Проверяем если это выбор языка (содержит флаг)
-    if any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇰🇷", "🇹🇷", "🇹🇯", "🇺🇿"]):
-        source_lang = lang_name_to_code(text)
-        logger.info(f"Manba tili tanlandi: {text} -> {source_lang}")
-        await state.update_data(source_lang=source_lang)
-        await state.set_state(TranslateStates.waiting_for_text)
-        
-        await message.answer(f"{EMOJI_PREMIUM['translate']} Matnni yuboring:")
-        return
-    
-    spam_count = await db.get_spam_count(user_id, minutes=1)
-    if spam_count > 10:
-        await db.log_spam(user_id, "spam_detected")
-        await message.answer(f"{EMOJI_PREMIUM['error']} Juda ko'p so'rovlar! Kuting...")
-        return
-    
-    await db.log_spam(user_id, "translate_request")
-    
-    if len(text) == 0 or len(text) > 5000:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Matn 1 dan 5000 belgigacha bo'lishi kerak!")
-        return
-    
-    await state.update_data(source_text=text)
-    await state.set_state(TranslateStates.waiting_for_target_lang)
-    
+@router.message(TranslateStates.main_menu, F.text == "👇 Tilni tanlang (dan)")
+async def select_source_language(message: Message, state: FSMContext):
+    """Выбор исходного языка"""
+    await state.set_state(TranslateStates.selecting_source_lang)
     await message.answer(
-        f"{EMOJI_PREMIUM['world']} Matn qaysi tilga tarjima qilinsin?",
-        reply_markup=get_target_language_keyboard()
+        "til tanlang menyusi",
+        reply_markup=get_language_selection_keyboard()
     )
 
 
-@router.message(TranslateStates.waiting_for_text, F.text)
-async def handle_text_input(message: Message, state: FSMContext):
+@router.message(TranslateStates.main_menu, F.text == "👇 Tilni tanlang (ga)")
+async def select_target_language(message: Message, state: FSMContext):
+    """Выбор целевого языка"""
+    await state.set_state(TranslateStates.selecting_target_lang)
+    await message.answer(
+        "til tanlang menyusi",
+        reply_markup=get_language_selection_keyboard()
+    )
+
+
+@router.message(TranslateStates.selecting_source_lang, F.text)
+async def handle_source_lang_selection(message: Message, state: FSMContext):
+    """Обработка выбора исходного языка"""
     user_id = message.from_user.id
     text = message.text.strip()
     
     if await db.is_banned(user_id):
-        await message.answer(f"{EMOJI_PREMIUM['error']} Siz bloklangan!")
-        await state.clear()
-        return
-    
-    if len(text) == 0 or len(text) > 5000:
-        await message.answer(f"{EMOJI_PREMIUM['error']} Matn 1 dan 5000 belgigacha bo'lishi kerak!")
-        return
-    
-    data = await state.get_data()
-    source_lang = data.get("source_lang", "auto")
-    last_target_lang = data.get("last_target_lang")
-    
-    # Если есть запомненный целевой язык, используем его автоматически
-    if last_target_lang:
-        logger.info(f"Avtomatik tarjima: {source_lang} -> {last_target_lang}")
-        
-        await message.answer(f"{EMOJI_PREMIUM['lightning']} Tarjima qilinmoqda...")
-        
-        translated = await Translator.translate(text, source_lang=source_lang, target_lang=last_target_lang)
-        
-        if translated:
-            await db.add_translation(user_id, text, translated, source_lang, last_target_lang)
-            
-            target_lang_name = LANGUAGE_NAMES.get(last_target_lang, last_target_lang)
-            source_lang_name = LANGUAGE_NAMES.get(source_lang, source_lang)
-            
-            result_text = f"{EMOJI_PREMIUM['success']} Tarjima tayyor!\n\n{EMOJI_PREMIUM['world']} Manba tili: {source_lang_name}\n{EMOJI_PREMIUM['world']} Tarjima tili: {target_lang_name}\n\n📝 Natija: {translated}\n\n{EMOJI_PREMIUM['start']} Yana matn yuboring!"
-            
-            await message.answer(result_text, reply_markup=get_source_language_keyboard())
-        else:
-            await message.answer(
-                f"{EMOJI_PREMIUM['error']} Tarjimada xato. Keyinroq qo'llab ko'ring.",
-                reply_markup=get_source_language_keyboard()
-            )
-    else:
-        # Если нет запомненного языка, спрашиваем целевой язык
-        await state.update_data(source_text=text)
-        await state.set_state(TranslateStates.waiting_for_target_lang)
-        
-        await message.answer(
-            f"{EMOJI_PREMIUM['world']} Matn qaysi tilga tarjima qilinsin?",
-            reply_markup=get_target_language_keyboard()
-        )
-
-
-@router.message(TranslateStates.waiting_for_target_lang, F.text)
-async def handle_target_lang_selection(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    text = message.text.strip()
-    
-    if await db.is_banned(user_id):
-        await message.answer(f"{EMOJI_PREMIUM['error']} Siz bloklangan!")
-        await state.clear()
+        await message.answer(f"Siz bloklangan!")
         return
     
     if not any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇰🇷", "🇹🇷", "🇹🇯", "🇺🇿"]):
-        await message.answer(f"{EMOJI_PREMIUM['error']} Iltimos, tilni tanlang!")
+        await message.answer("Iltimos, tilni tanlang!")
+        return
+    
+    source_lang = lang_name_to_code(text)
+    logger.info(f"Manba tili tanlandi: {text} -> {source_lang}")
+    
+    await state.update_data(source_lang=source_lang)
+    await state.set_state(TranslateStates.main_menu)
+    
+    await message.answer(
+        f"Tarjima tili tanlandi\n\n{text}",
+        reply_markup=get_main_menu_keyboard()
+    )
+
+
+@router.message(TranslateStates.selecting_target_lang, F.text)
+async def handle_target_lang_selection(message: Message, state: FSMContext):
+    """Обработка выбора целевого языка"""
+    user_id = message.from_user.id
+    text = message.text.strip()
+    
+    if await db.is_banned(user_id):
+        await message.answer(f"Siz bloklangan!")
+        return
+    
+    if not any(flag in text for flag in ["🇷🇺", "🇺🇸", "🇰🇷", "🇹🇷", "🇹🇯", "🇺🇿"]):
+        await message.answer("Iltimos, tilni tanlang!")
         return
     
     target_lang = lang_name_to_code(text)
     logger.info(f"Maqsadli tili tanlandi: {text} -> {target_lang}")
     
+    await state.update_data(target_lang=target_lang)
+    await state.set_state(TranslateStates.main_menu)
+    
+    await message.answer(
+        f"Tarjima tili tanlandi\n\n{text}",
+        reply_markup=get_main_menu_keyboard()
+    )
+
+
+@router.message(TranslateStates.main_menu, F.text)
+async def handle_text_for_translation(message: Message, state: FSMContext):
+    """Обработка текста для перевода"""
+    user_id = message.from_user.id
+    text = message.text.strip()
+    
+    if await db.is_banned(user_id):
+        await message.answer(f"Siz bloklangan!")
+        return
+    
+    if len(text) == 0 or len(text) > 5000:
+        await message.answer(f"Matn 1 dan 5000 belgigacha bo'lishi kerak!")
+        return
+    
     data = await state.get_data()
-    source_text = data.get("source_text", "")
     source_lang = data.get("source_lang", "auto")
+    target_lang = data.get("target_lang", "uz")
     
-    logger.info(f"Tarjima parametrlari: source_lang={source_lang}, target_lang={target_lang}, text={source_text[:50]}")
+    logger.info(f"Tarjima parametrlari: source_lang={source_lang}, target_lang={target_lang}, text={text[:50]}")
     
-    await message.answer(f"{EMOJI_PREMIUM['lightning']} Tarjima qilinmoqda...")
+    await message.answer(f"Tarjima qilinmoqda...")
     
-    translated = await Translator.translate(source_text, source_lang=source_lang, target_lang=target_lang)
+    translated = await Translator.translate(text, source_lang=source_lang, target_lang=target_lang)
     
     if translated:
-        await db.add_translation(user_id, source_text, translated, source_lang, target_lang)
+        await db.add_translation(user_id, text, translated, source_lang, target_lang)
         
         target_lang_name = LANGUAGE_NAMES.get(target_lang, target_lang)
         source_lang_name = LANGUAGE_NAMES.get(source_lang, source_lang)
         
-        result_text = f"{EMOJI_PREMIUM['success']} Tarjima tayyor!\n\n{EMOJI_PREMIUM['world']} Manba tili: {source_lang_name}\n{EMOJI_PREMIUM['world']} Tarjima tili: {target_lang_name}\n\n📝 Natija: {translated}\n\n{EMOJI_PREMIUM['start']} Yana matn yuboring!"
+        result_text = f"Tarjima tayyor!\n\nManba tili: {source_lang_name}\nTarjima tili: {target_lang_name}\n\nNatija: {translated}"
         
-        # Запомнить последний целевой язык
-        await state.update_data(last_target_lang=target_lang)
-        await state.set_state(TranslateStates.waiting_for_text)
-        
-        await message.answer(result_text, reply_markup=get_source_language_keyboard())
+        await message.answer(result_text, reply_markup=get_main_menu_keyboard())
     else:
         await message.answer(
-            f"{EMOJI_PREMIUM['error']} Tarjimada xato. Keyinroq qo'llab ko'ring.",
-            reply_markup=get_source_language_keyboard()
+            f"Tarjimada xato. Keyinroq qo'llab ko'ring.",
+            reply_markup=get_main_menu_keyboard()
         )
-        await state.clear()

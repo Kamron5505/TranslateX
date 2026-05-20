@@ -2,18 +2,20 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
 from config import LANGUAGES, EMOJI_PREMIUM, LANGUAGE_NAMES
 
 
-def get_source_language_keyboard() -> ReplyKeyboardMarkup:
+def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
+    """Главное меню с выбором исходного и целевого языка"""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🇺🇿 Uzbek"), KeyboardButton(text="🇷🇺 Russian"), KeyboardButton(text="🇺🇸 English")],
-            [KeyboardButton(text="🇰🇷 Korean"), KeyboardButton(text="🇹🇷 Turkish"), KeyboardButton(text="🇹🇯 Tajik")],
+            [KeyboardButton(text="👇 Tilni tanlang (dan)")],
+            [KeyboardButton(text="👇 Tilni tanlang (ga)")],
         ],
         resize_keyboard=True,
         one_time_keyboard=False
     )
 
 
-def get_target_language_keyboard() -> ReplyKeyboardMarkup:
+def get_language_selection_keyboard() -> ReplyKeyboardMarkup:
+    """Клавиатура для выбора языка"""
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="🇺🇿 Uzbek"), KeyboardButton(text="🇷🇺 Russian"), KeyboardButton(text="🇺🇸 English")],
@@ -25,19 +27,19 @@ def get_target_language_keyboard() -> ReplyKeyboardMarkup:
 
 
 def get_language_keyboard() -> ReplyKeyboardMarkup:
-    return get_source_language_keyboard()
+    return get_language_selection_keyboard()
+
+
+def get_source_language_keyboard() -> ReplyKeyboardMarkup:
+    return get_language_selection_keyboard()
+
+
+def get_target_language_keyboard() -> ReplyKeyboardMarkup:
+    return get_language_selection_keyboard()
 
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="🚀 Tarjima qilish")],
-            [KeyboardButton(text="🌍 Tilni tanlang")],
-            [KeyboardButton(text="ℹ️ Yordam")]
-        ],
-        resize_keyboard=True,
-        one_time_keyboard=False
-    )
+    return get_main_menu_keyboard()
 
 
 def get_admin_keyboard() -> ReplyKeyboardMarkup:
