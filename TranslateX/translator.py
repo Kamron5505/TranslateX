@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 import asyncio
 import aiohttp
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +30,9 @@ class Translator:
             
             logger.info(f"Tarjima: {source_lang} -> {target_lang}, Matn: {text[:50]}")
             
-            # Для корейского используем deep-translator с Google Translate
+            # Для корейского используем Google Translate API
             if source_lang == "ko" or target_lang == "ko":
-                return await Translator._translate_with_deep_translator(text, source_lang, target_lang)
+                return await Translator._translate_with_google(text, source_lang, target_lang)
             
             # Для остальных используем MyMemory API
             return await Translator._translate_with_mymemory(text, source_lang, target_lang)
@@ -107,36 +108,74 @@ class Translator:
             return None
 
     @staticmethod
-    async def _translate_with_deep_translator(text: str, source_lang: str, target_lang: str) -> Optional[str]:
-        """Перевод через deep-translator (Google Translate)"""
+    async def _translate_with_google(text: str, source_lang: str, target_lang: str) -> Optional[str]:
+        """Перевод через Google Translate API"""
         try:
-            from deep_translator import GoogleTranslator
-            
-            # Map language codes to deep-translator format
+            # Map language codes to Google Translate codes
             lang_map = {
-                "uz": "uzbek",
-                "ru": "russian",
-                "en": "english",
-                "ko": "korean",
-                "tr": "turkish",
-                "tg": "tajik",
+                "uz": "uz",
+                "ru": "ru",
+                "en": "en",
+                "ko": "ko",
+                "tr": "tr",
+                "tg": "tg",
                 "auto": "auto"
             }
             
             src = lang_map.get(source_lang, source_lang)
             dest = lang_map.get(target_lang, target_lang)
             
-            # Run translation in thread pool to avoid blocking
+            # Use Google Translate API via requests
             loop = asyncio.get_event_loop()
             
             def do_translate():
-                translator = GoogleTranslator(source_language=src, target_language=dest)
-                return translator.translate(text)
+                url = "https://translate.googleapis.com/translate_a/element.js"
+                params = {
+                    "client": "gtx",
+                    "sl": src,
+                    "tl": dest,
+                    "text": text
+                }
+                
+                # Alternative: use simple Google Translate endpoint
+                url = f"https://translate.googleapis.com/translate_a/single"
+                params = {
+                    "client": "gtx",
+                    "sl": src,
+                    "tl": dest,
+                    "dt": "t",
+                    "q": text
+                }
+                
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                }
+                
+                response = requests.get(url, params=params, headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    # Parse the response - it's a complex JSON structure
+                    import json
+                    try:
+                        data = response.json()
+                        # Extract translated text from the response
+                        if isinstance(data, list) and len(data) > 0:
+                            if isinstance(data[0], list) and len(data[0]) > 0:
+                                if isinstance(data[0][0], list) and len(data[0][0]) > 0:
+                                    return data[0][0][0]
+                    except:
+                        pass
+                
+                return None
             
             translated_text = await loop.run_in_executor(None, do_translate)
             
-            logger.info(f"Tarjima muvaffaqiyatli (Google): {source_lang} -> {target_lang}, Natija: {translated_text[:50]}")
-            return translated_text
+            if translated_text:
+                logger.info(f"Tarjima muvaffaqiyatli (Google): {source_lang} -> {target_lang}, Natija: {translated_text[:50]}")
+                return translated_text
+            
+            logger.error(f"Google Translate xatosi: {source_lang} -> {target_lang}")
+            return None
             
         except Exception as e:
             logger.error(f"Google Translate tarjimada xato: {str(e)}")
