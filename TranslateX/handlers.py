@@ -154,12 +154,7 @@ async def handle_text_for_translation(message: Message, state: FSMContext):
     if translated:
         await db.add_translation(user_id, text, translated, source_lang, target_lang)
         
-        target_lang_name = LANGUAGE_NAMES.get(target_lang, target_lang)
-        source_lang_name = LANGUAGE_NAMES.get(source_lang, source_lang)
-        
-        result_text = f"Tarjima tayyor!\n\nManba tili: {source_lang_name}\nTarjima tili: {target_lang_name}\n\nNatija: {translated}"
-        
-        await message.answer(result_text, reply_markup=get_main_menu_keyboard())
+        await message.answer(translated, reply_markup=get_main_menu_keyboard())
     else:
         await message.answer(
             f"Tarjimada xato. Keyinroq qo'llab ko'ring.",
