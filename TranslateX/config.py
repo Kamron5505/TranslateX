@@ -13,24 +13,18 @@ LANGUAGES = {
     "🇺🇿": "uz",
     "🇷🇺": "ru",
     "🇺🇸": "en",
-    "🇵🇹": "pt",
-    "🇩🇪": "de",
-    "🇫🇷": "fr",
-    "🇪🇸": "es",
-    "🇮🇹": "it",
+    "🇰🇷": "ko",
     "🇹🇷": "tr",
+    "🇹🇯": "tg",
 }
 
 LANGUAGE_NAMES = {
     "uz": "Uzbek",
     "ru": "Russian",
     "en": "English",
-    "pt": "Portuguese",
-    "de": "German",
-    "fr": "French",
-    "es": "Spanish",
-    "it": "Italian",
+    "ko": "Korean",
     "tr": "Turkish",
+    "tg": "Tajik",
 }
 
 EMOJI_PREMIUM = {

@@ -5,8 +5,8 @@ from config import LANGUAGES, EMOJI_PREMIUM, LANGUAGE_NAMES
 def get_source_language_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🇺🇿 Uzbek"), KeyboardButton(text="🇷🇺 Russian"), KeyboardButton(text="🇺🇸 English"), KeyboardButton(text="🇹🇷 Turkish")],
-            [KeyboardButton(text="🇵🇹 Portuguese"), KeyboardButton(text="🇩🇪 German"), KeyboardButton(text="🇫🇷 French"), KeyboardButton(text="🇮🇹 Italian")],
+            [KeyboardButton(text="🇺🇿 Uzbek"), KeyboardButton(text="🇷🇺 Russian"), KeyboardButton(text="🇺🇸 English")],
+            [KeyboardButton(text="🇰🇷 Korean"), KeyboardButton(text="🇹🇷 Turkish"), KeyboardButton(text="🇹🇯 Tajik")],
         ],
         resize_keyboard=True,
         one_time_keyboard=False
@@ -16,8 +16,8 @@ def get_source_language_keyboard() -> ReplyKeyboardMarkup:
 def get_target_language_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🇺🇿 Uzbek"), KeyboardButton(text="🇷🇺 Russian"), KeyboardButton(text="🇺🇸 English"), KeyboardButton(text="🇹🇷 Turkish")],
-            [KeyboardButton(text="🇵🇹 Portuguese"), KeyboardButton(text="🇩🇪 German"), KeyboardButton(text="🇫🇷 French"), KeyboardButton(text="🇮🇹 Italian")],
+            [KeyboardButton(text="🇺🇿 Uzbek"), KeyboardButton(text="🇷🇺 Russian"), KeyboardButton(text="🇺🇸 English")],
+            [KeyboardButton(text="🇰🇷 Korean"), KeyboardButton(text="🇹🇷 Turkish"), KeyboardButton(text="🇹🇯 Tajik")],
         ],
         resize_keyboard=True,
         one_time_keyboard=False
@@ -66,7 +66,7 @@ def get_confirm_keyboard() -> InlineKeyboardMarkup:
 
 def lang_name_to_code(lang_name: str) -> str:
     """Преобразовать название языка в код"""
-    # Извлекаем название из текста (например "🇫🇷 French" -> "French")
+    # Извлекаем название из текста (например "🇰🇷 Korean" -> "Korean")
     parts = lang_name.split()
     if len(parts) > 1:
         lang_text = " ".join(parts[1:])  # Берем все после флага
@@ -77,11 +77,9 @@ def lang_name_to_code(lang_name: str) -> str:
         "Uzbek": "uz",
         "Russian": "ru",
         "English": "en",
+        "Korean": "ko",
         "Turkish": "tr",
-        "Portuguese": "pt",
-        "German": "de",
-        "French": "fr",
-        "Italian": "it",
+        "Tajik": "tg",
     }
     
     # Ищем точное совпадение
